@@ -8,7 +8,7 @@ Homebrew tap for [comma-cli](https://github.com/miuzel/comma-cli) — the tiny C
 brew install miuzel/tap/comma-cli
 ```
 
-This installs the binary as `,` (with `comma` as an alias) plus a `comma-setup` helper. Run `comma-setup` once to create `~/.config/comma/config.json` interactively (base URL, API key, model name) — or edit the file manually / use the `COMMA_BASE_URL`, `COMMA_API_KEY`, `COMMA_MODEL` env vars.
+This installs the binary as `,` (with `comma` as an alias) plus a `comma-setup` helper. Run `comma-setup` once to create `~/.config/comma/config.json` interactively (base URL, API key, model name) — skipping the prompts still leaves a default config file with empty fields for you to edit. Or edit the file manually / use the `COMMA_BASE_URL`, `COMMA_API_KEY`, `COMMA_MODEL` env vars.
 
 (Setup can't run inside `brew install` itself: Homebrew points `$HOME` at a temporary build dir during install hooks, so the prompt lives in `comma-setup`, which runs in your real environment.)
 
