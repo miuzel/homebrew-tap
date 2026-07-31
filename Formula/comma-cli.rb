@@ -35,67 +35,53 @@ class CommaCli < Formula
     # The upstream binary is invoked as `,`; `comma` is provided as an alias.
     bin.install "comma" => ","
     ln_sf ",", bin/"comma"
-  end
 
-  def post_install
-    # Respect an existing config from a previous install (XDG or legacy).
-    return if config_file.exist? || legacy_config_file.exist?
+    # Interactive first-time setup helper. Homebrew points HOME at a
+    # temporary build dir during install/post_install (and user lookups are
+    # unreliable there), so config prompting cannot live in post_install —
+    # it ships as a regular command run in the user's real environment.
+    (buildpath/"comma-setup").write <<~'SH'
+      #!/bin/sh
+      # comma-setup: interactive first-time setup for comma-cli.
+      # Writes $XDG_CONFIG_HOME/comma/config.json (default ~/.config/comma/config.json).
+      set -eu
 
-    # Never write the config into a temporary build dir — during install brew
-    # points HOME there, and a wrong home resolution must not go unnoticed.
-    tmp = ENV["HOMEBREW_TEMP"].to_s
-    if config_dir.to_s.start_with?("/tmp/", "/private/tmp/", tmp.empty? ? "\0" : "#{tmp}/")
-      opoo "Refusing to write config into a temporary dir: #{config_dir}"
-      opoo "Create #{real_home}/.config/comma/config.json manually instead."
-      return
-    end
+      config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/comma"
+      config_file="$config_dir/config.json"
 
-    # Prompt for model credentials only when a terminal is attached; the
-    # prompt is skippable (Enter) and skipped entirely without a TTY.
-    tty = begin
-      File.open("/dev/tty", "r")
-    rescue SystemCallError
-      nil
-    end
-    if tty.nil?
-      opoo "No config found; create #{config_file} (see `brew info comma-cli` for the format)"
-      return
-    end
+      if [ -f "$config_file" ]; then
+        echo "Config already exists: $config_file"
+        exit 0
+      fi
 
-    ohai "comma-cli first-time setup (press Enter to skip)"
-    puts "No config found at #{config_file}."
-    puts "Enter your model API details now, or skip and edit the file later."
+      # Escape \ and " for embedding in a JSON string.
+      esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
-    base_url = nil
-    api_key = nil
-    model = nil
-    begin
-      $stdout.print "Base URL (e.g. https://api.cerebras.ai/v1) [skip]: "
-      base_url = tty.gets.to_s.strip
-      return if base_url.empty?
+      printf 'Base URL (e.g. https://api.cerebras.ai/v1) [skip]: '
+      read -r base_url
+      [ -n "$base_url" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
+      printf 'API key: '
+      read -r api_key
+      [ -n "$api_key" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
+      printf 'Model name (e.g. gemma-4-31b): '
+      read -r model
+      [ -n "$model" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
 
-      $stdout.print "API key: "
-      api_key = tty.gets.to_s.strip
-      return if api_key.empty?
-
-      $stdout.print "Model name (e.g. gemma-4-31b): "
-      model = tty.gets.to_s.strip
-      return if model.empty?
-    ensure
-      tty.close
-    end
-
-    require "json"
-    config_dir.mkpath
-    config_file.write JSON.pretty_generate(
-      "base_url" => base_url,
-      "auth_token" => api_key,
-      "model" => model,
-      "cache_size" => 1000,
-      "reasoning" => 0,
-    )
-    config_file.chmod 0o600
-    ohai "Config written to #{config_file}"
+      mkdir -p "$config_dir"
+      {
+        printf '{\n'
+        printf '  "base_url": "%s",\n' "$(esc "$base_url")"
+        printf '  "auth_token": "%s",\n' "$(esc "$api_key")"
+        printf '  "model": "%s",\n' "$(esc "$model")"
+        printf '  "cache_size": 1000,\n'
+        printf '  "reasoning": 0\n'
+        printf '}\n'
+      } > "$config_file"
+      chmod 600 "$config_file"
+      echo "Config written to $config_file"
+    SH
+    (buildpath/"comma-setup").chmod 0o755
+    bin.install "comma-setup"
   end
 
   def caveats
@@ -104,9 +90,9 @@ class CommaCli < Formula
         , find all TODO comments in python files
       (`comma` is an alias if your shell dislikes `,`)
 
-      Config file: #{config_file}
-        Set base_url / auth_token / model there, or use the COMMA_BASE_URL,
-        COMMA_API_KEY and COMMA_MODEL environment variables.
+      First-time setup (interactively creates ~/.config/comma/config.json):
+        comma-setup
+      Or set the COMMA_BASE_URL, COMMA_API_KEY and COMMA_MODEL environment variables.
       Free model providers: Cerebras (cerebras.ai), Groq (groq.com), Ollama (local).
 
       Optional shell integration (lets generated `cd`/env changes apply to your shell):
@@ -117,31 +103,5 @@ class CommaCli < Formula
   test do
     assert_match version.to_s, shell_output("#{bin}/, --version")
     assert_path_exists bin/"comma"
-  end
-
-  private
-
-  def config_dir
-    xdg = ENV["XDG_CONFIG_HOME"]
-    base = xdg.nil? || xdg.empty? ? real_home/".config" : Pathname.new(xdg)
-    base/"comma"
-  end
-
-  def config_file
-    config_dir/"config.json"
-  end
-
-  def legacy_config_file
-    real_home/".local/bin/,.config.json"
-  end
-
-  # Homebrew points HOME at a temporary build dir during install/post_install,
-  # so Dir.home is wrong there — resolve the invoking user's home from the
-  # passwd entry instead.
-  def real_home
-    require "etc"
-    Pathname.new(Etc.getpwuid.dir)
-  rescue StandardError
-    Pathname.new(Dir.home)
   end
 end
