@@ -41,6 +41,15 @@ class CommaCli < Formula
     # Respect an existing config from a previous install (XDG or legacy).
     return if config_file.exist? || legacy_config_file.exist?
 
+    # Never write the config into a temporary build dir — during install brew
+    # points HOME there, and a wrong home resolution must not go unnoticed.
+    tmp = ENV["HOMEBREW_TEMP"].to_s
+    if config_dir.to_s.start_with?("/tmp/", "/private/tmp/", tmp.empty? ? "\0" : "#{tmp}/")
+      opoo "Refusing to write config into a temporary dir: #{config_dir}"
+      opoo "Create #{real_home}/.config/comma/config.json manually instead."
+      return
+    end
+
     # Prompt for model credentials only when a terminal is attached; the
     # prompt is skippable (Enter) and skipped entirely without a TTY.
     tty = begin
