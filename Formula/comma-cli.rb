@@ -58,15 +58,20 @@ class CommaCli < Formula
       esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
       printf 'Base URL (e.g. https://api.cerebras.ai/v1) [skip]: '
-      read -r base_url
-      [ -n "$base_url" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
-      printf 'API key: '
-      read -r api_key
-      [ -n "$api_key" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
-      printf 'Model name (e.g. gemma-4-31b): '
-      read -r model
-      [ -n "$model" ] || { echo "Skipped. Edit $config_file later."; exit 0; }
+      read -r base_url || base_url=""
+      api_key=""
+      model=""
+      if [ -n "$base_url" ]; then
+        printf 'API key: '
+        read -r api_key || api_key=""
+        if [ -n "$api_key" ]; then
+          printf 'Model name (e.g. gemma-4-31b): '
+          read -r model || model=""
+        fi
+      fi
 
+      # Skipping any step still leaves a config file (with whatever was
+      # entered) for the user to edit later.
       mkdir -p "$config_dir"
       {
         printf '{\n'
@@ -78,7 +83,11 @@ class CommaCli < Formula
         printf '}\n'
       } > "$config_file"
       chmod 600 "$config_file"
-      echo "Config written to $config_file"
+      if [ -n "$base_url" ] && [ -n "$api_key" ] && [ -n "$model" ]; then
+        echo "Config written to $config_file"
+      else
+        echo "Default config written to $config_file — edit it to add your API key/model."
+      fi
     SH
     (buildpath/"comma-setup").chmod 0o755
     bin.install "comma-setup"
