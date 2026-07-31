@@ -114,7 +114,7 @@ class CommaCli < Formula
 
   def config_dir
     xdg = ENV["XDG_CONFIG_HOME"]
-    base = xdg.nil? || xdg.empty? ? Pathname.new(Dir.home)/".config" : Pathname.new(xdg)
+    base = xdg.nil? || xdg.empty? ? real_home/".config" : Pathname.new(xdg)
     base/"comma"
   end
 
@@ -123,6 +123,16 @@ class CommaCli < Formula
   end
 
   def legacy_config_file
-    Pathname.new(Dir.home)/".local/bin/,.config.json"
+    real_home/".local/bin/,.config.json"
+  end
+
+  # Homebrew points HOME at a temporary build dir during install/post_install,
+  # so Dir.home is wrong there — resolve the invoking user's home from the
+  # passwd entry instead.
+  def real_home
+    require "etc"
+    Pathname.new(Etc.getpwuid.dir)
+  rescue StandardError
+    Pathname.new(Dir.home)
   end
 end
