@@ -6,28 +6,28 @@
 class CommaCli < Formula
   desc "Turn natural-language intent into a shell command using an LLM"
   homepage "https://github.com/miuzel/comma-cli"
-  version "0.29.0"
+  version "0.29.1"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.0/comma-macos-aarch64.tar.gz"
-      sha256 "aa7bc41c5188294a69d2ec9f94484b03d22d44eb394dfa65e7ef65d326cc46fb"
+      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.1/comma-macos-aarch64.tar.gz"
+      sha256 "8e0b02f26959446dad40f2a9b6113c0cfa2928deab49e64125e2f94e4e7d43aa"
     end
     on_intel do
-      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.0/comma-macos-x86_64.tar.gz"
-      sha256 "35d40c1f18681d7665ce912e4bf8916bae2c7d961409faab67987a0c76856409"
+      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.1/comma-macos-x86_64.tar.gz"
+      sha256 "9489e69afb5e0eb50501b4b19afc5f6ce3edc1245a4916c4e54d1311ee631b8b"
     end
   end
 
   on_linux do
     on_intel do
-      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.0/comma-linux-x86_64.tar.gz"
-      sha256 "fcacbc8dc8e5735c11fa5ec7ea33d4fc17e9a15c817e8936a551441f3a40c748"
+      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.1/comma-linux-x86_64.tar.gz"
+      sha256 "522cd38f7646618ebd7a23af7c2a8aaf8bd4724a5ecd835e5c3c2bb84fde3a79"
     end
     on_arm do
-      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.0/comma-linux-aarch64.tar.gz"
-      sha256 "b1183f4b79fd48e973f597f96045f8a434cb690ba15af1e1c8a160983069d2a3"
+      url "https://github.com/miuzel/comma-cli/releases/download/v0.29.1/comma-linux-aarch64.tar.gz"
+      sha256 "76b38678a1a80965b0158bce1006a7a2336f7caed1e14a3ca2fd029d0bb0e28e"
     end
   end
 
